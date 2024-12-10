@@ -92,10 +92,11 @@ DATABASES = {
         'NAME': 'memedb',           # The database name you retrieved from the environment
         'USER': 'postgres',         # The username you retrieved
         'PASSWORD': 'yourpassword', # The password you retrieved
-        'HOST': 'meme_social_media-db-1',  # The container name, as seen in `docker ps`
+        'HOST': 'db',              
         'PORT': '5432',             # Default PostgreSQL port
     }
 }
+
 # settings.py
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # e.g., 15 minutes
