@@ -56,7 +56,11 @@ def logout(request):
 
 @api_view(['POST'])
 def token_refresh(request):
+    """
+    Refresh the access token using the refresh token stored in cookies.
+    """
     refresh_token = request.COOKIES.get('refresh_token')
+
     if not refresh_token:
         return Response({"error": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -64,15 +68,14 @@ def token_refresh(request):
         refresh = RefreshToken(refresh_token)
         new_access_token = str(refresh.access_token)
 
+        # Create a response with the new access token
         response = JsonResponse({"access_token": new_access_token})
         response.set_cookie(
-            'access_token', new_access_token,
-            httponly=True, secure=True, samesite='None', max_age=900  # 15 minutes
-        )
+            'access_token', new_access_token, httponly=True, secure=True, samesite='Strict', max_age=900
+        )  # Expires in 15 minutes
         return response
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
 @api_view(['POST'])
 def create_post(request):
     """

@@ -1,0 +1,9 @@
+POST http://localhost:8000/api/signup/
+Host: localhost:8000Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzMzOTIxMjE4LCJpYXQiOjE3MzM5MjAzMTgsImp0aSI6ImFhY2RmMzJmZjVjNTRmZWY5NzJlNGEyNjNmZmZmZjY2IiwidXNlcl9pZCI6MX0.0dqPICp61VoLfMQR_RCPIvEn8GZcG5Mb69Oe-pEWZM8
+Content-Type: application/json
+
+{
+  "username": "Mine",
+  "email":"mine@gmail.com",
+  "password":"mine12"
+}

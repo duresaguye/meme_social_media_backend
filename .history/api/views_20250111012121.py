@@ -7,13 +7,6 @@ from .serializers import UserSerializer, PostSerializer, CommentSerializer, Like
 from .models import Post, Like
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.http import JsonResponse
-from django.contrib.auth import authenticate
-from rest_framework.views import APIView
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import AllowAny
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from rest_framework_simplejwt.tokens import RefreshToken
 
 
 @api_view(['POST'])
@@ -29,34 +22,41 @@ def signup(request):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Custom Token view for JWT login, setting tokens in HttpOnly cookies.
+    """
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         access_token = response.data.get('access')
         refresh_token = response.data.get('refresh')
 
-        if access_token and refresh_token:
-            response = JsonResponse({'message': 'Login successful'})
-            response.set_cookie(
-                'access_token', access_token,
-                httponly=True, secure=True, samesite='None', max_age=900  # Set SameSite=None for cross-origin
-            )
-            response.set_cookie(
-                'refresh_token', refresh_token,
-                httponly=True, secure=True, samesite='None', max_age=604800  # 7 days
-            )
-        return response
+        # Create a JsonResponse with success message
+        response = JsonResponse({'message': 'Login successful'})
 
+        # Set HttpOnly cookies for the tokens
+        if access_token and refresh_token:
+            response.set_cookie(
+                'access_token', access_token, httponly=True, secure=True, samesite='Strict', max_age=900
+            )  # Expires in 15 minutes
+            response.set_cookie(
+                'refresh_token', refresh_token, httponly=True, secure=True, samesite='Strict', max_age=604800
+            )  # Expires in 7 days
+        return response
 @api_view(['POST'])
 def logout(request):
     response = JsonResponse({'message': 'Logged out successfully'})
-    response.delete_cookie('access_token', samesite='None')
-    response.delete_cookie('refresh_token', samesite='None')
+    response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
     return response
 
 
 @api_view(['POST'])
 def token_refresh(request):
+    """
+    Refresh the access token using the refresh token stored in cookies.
+    """
     refresh_token = request.COOKIES.get('refresh_token')
+
     if not refresh_token:
         return Response({"error": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -64,15 +64,14 @@ def token_refresh(request):
         refresh = RefreshToken(refresh_token)
         new_access_token = str(refresh.access_token)
 
+        # Create a response with the new access token
         response = JsonResponse({"access_token": new_access_token})
         response.set_cookie(
-            'access_token', new_access_token,
-            httponly=True, secure=True, samesite='None', max_age=900  # 15 minutes
-        )
+            'access_token', new_access_token, httponly=True, secure=True, samesite='Strict', max_age=900
+        )  # Expires in 15 minutes
         return response
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
 @api_view(['POST'])
 def create_post(request):
     """
@@ -132,19 +131,15 @@ class GoogleLoginView(APIView):
         access_token = request.data.get('access_token')
 
         if not access_token:
+            print("No access token provided")  # Debug statement
             return Response({"error": "No access token provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        print("Access token received:", access_token)  # Debug statement
 
         try:
             # Verify the token with Google
-            id_info = id_token.verify_oauth2_token(access_token, requests.Request(), '402861434161-tbprfhgvobro0n3ob0cn0rno2jlv94df.apps.googleusercontent.com')
-
-            # Log the token response for debugging
-            print("Token verified successfully!")
-            print("id_info:", id_info)
-
-            # Check the expiry or any issues in the id_info
-            if 'exp' in id_info:
-                print(f"Token expiry time: {id_info['exp']}")
+            id_info = id_token.verify_oauth2_token(access_token, requests.Request(), '923705621923-5bs935v50g0l5uqq1t67m0s9knalcbip.apps.googleusercontent.com')
+            print("Token verified:", id_info)  # Debug statement
 
             # Get or create the user
             user, created = User.objects.get_or_create(email=id_info['email'], defaults={'username': id_info['email']})
@@ -155,21 +150,10 @@ class GoogleLoginView(APIView):
 
             # Generate tokens
             refresh = RefreshToken.for_user(user)
-            response = Response({
+            return Response({
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
             })
-
-            # Set tokens in HttpOnly cookies if needed
-            response.set_cookie('refresh_token', str(refresh), httponly=True, secure=True, samesite='Strict', max_age=3600*24*7)
-            response.set_cookie('access_token', str(refresh.access_token), httponly=True, secure=True, samesite='Strict', max_age=900)
-
-            return response
         except ValueError as e:
-            error_message = str(e)
-            if 'Token used too late' in error_message:
-                print("Error: Token has expired.")
-                return Response({"error": "Token has expired"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                print("Error: Invalid token.", e)
-                return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+            print("Token verification failed:", str(e))  # Debug statement
+            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)

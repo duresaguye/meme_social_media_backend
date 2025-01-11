@@ -28,6 +28,9 @@ SECRET_KEY = 'django-insecure-fv(fw44*6n&2cg+d83mu2iz1)eq9+=t_v%sccw(ip*e6nb5#qe
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+CORS_ALLOW_CREDENTIALS = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 
 

@@ -32,7 +32,7 @@ ALLOWED_HOSTS = ['*']
 
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',  # frontend domain
+    'http://localhost:3000',  # Your frontend domain
 ]
 
 CORS_ALLOW_CREDENTIALS = True 

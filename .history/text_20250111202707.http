@@ -1,4 +1,4 @@
-POST http://localhost:8000/api/token/refresh/
+POST http://localhost:8000/api/signup/
 Content-Type: application/json
 
 {
